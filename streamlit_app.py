@@ -2,6 +2,10 @@ import streamlit as st
 import requests
 from datetime import datetime
 import pandas as pd
+import google.generativeai as genai
+
+# Configure the Gemini AI API key from Streamlit's secrets
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 # Access JIRA credentials from Streamlit Secrets
 jira_email = st.secrets["jira"]["email"]
@@ -45,6 +49,22 @@ def create_jira_ticket(feedback_data):
         st.error(f"Error creating JIRA ticket: {response.status_code} - {response.text}")
         # Display the full response for debugging
         st.write(response.text)
+
+# Function to summarize feedback using Gemini AI
+def summarize_feedback(feedback):
+    try:
+        # Load and configure the model
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Generate the summarized feedback
+        prompt = f"Summarize the following feedback: {feedback}"
+        response = model.generate_content(prompt)
+        
+        # Return the summarized content
+        return response.text
+    except Exception as e:
+        st.error(f"Error with Gemini AI: {e}")
+        return feedback  # If AI fails, return the original feedback
 
 # Streamlit App UI
 st.title("Advanced Product Feedback Collection System")
@@ -112,7 +132,7 @@ with st.form(key="feedback_form"):
 if submit_button:
     st.write("Thank you for your feedback!")
 
-    # Combine feedback into a single string to pass to JIRA
+    # Combine feedback into a single string to pass to Gemini AI for summarization
     feedback = (
         f"Satisfaction Rating: {satisfaction}\n"
         f"Usability Rating: {usability}\n"
@@ -152,10 +172,14 @@ if submit_button:
         f"Demo Experience: {demo_experience}\n"
     )
     
+    # Summarize feedback using Gemini AI
+    summarized_feedback = summarize_feedback(feedback)
+
+    # Prepare feedback data
     feedback_data = {
         'user_id': str(pd.to_datetime("today").strftime('%Y-%m-%d')),  # Using current date as a user ID for this example
-        'feedback': feedback
+        'feedback': summarized_feedback
     }
     
-    # Create a JIRA ticket
+    # Create a JIRA ticket with the summarized feedback
     create_jira_ticket(feedback_data)
