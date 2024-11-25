@@ -80,6 +80,10 @@ if submit_button:
         f"Feature Requests: {feature_requests}\n"
     )
 
+    # Log the feedback to ensure it's being collected
+    st.write("Collected Feedback:")
+    st.write(feedback)
+
     # Generate a concise summary using Gemini AI (optimized)
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
@@ -91,8 +95,16 @@ if submit_button:
             "Please keep the summary short and focused on key points."
         )
         
+        # Log the prompt for debugging
+        st.write("Prompt sent to Gemini AI:")
+        st.write(prompt)
+
         # Request summary generation
         response = model.generate_content(prompt)
+
+        # Log the response to debug the output from Gemini
+        st.write("Response from Gemini AI:")
+        st.write(response.text)
 
         feedback_summary = response.text.strip()
         
