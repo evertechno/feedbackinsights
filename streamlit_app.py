@@ -39,15 +39,18 @@ def create_jira_ticket(feedback_summary):
     # Authenticate using Basic Auth
     auth = (jira_email, jira_api_token)
 
-    # Send the request to create a new ticket
-    response = requests.post(url, json=issue_data, auth=auth)
+    try:
+        # Send the request to create a new ticket
+        response = requests.post(url, json=issue_data, auth=auth)
 
-    if response.status_code == 201:
-        st.success("JIRA ticket created successfully!")
-    else:
-        st.error(f"Error creating JIRA ticket: {response.status_code} - {response.text}")
-        # Display the full response for debugging
-        st.write(response.text)
+        if response.status_code == 201:
+            st.success("JIRA ticket created successfully!")
+        else:
+            st.error(f"Error creating JIRA ticket: {response.status_code} - {response.text}")
+            # Display the full response for debugging
+            st.write(response.text)
+    except Exception as e:
+        st.error(f"Error with JIRA API call: {e}")
 
 # Streamlit App UI
 st.title("Product Feedback Collection with Gemini AI")
@@ -77,23 +80,37 @@ if submit_button:
         f"Feature Requests: {feature_requests}\n"
     )
 
-    # Generate a summary using Gemini AI
+    # Generate a concise summary using Gemini AI (optimized)
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"Summarize the following product feedback in a concise and clear way:\n{feedback}"
-        response = model.generate_content(prompt)
         
+        # Focused prompt to Gemini for generating a concise feedback summary
+        prompt = (
+            f"Summarize the following product feedback, focusing on satisfaction, usability, improvement suggestions, "
+            f"and feature requests, in a concise and clear way:\n\n{feedback}\n\n"
+            "Please keep the summary short and focused on key points."
+        )
+        
+        # Request summary generation
+        response = model.generate_content(prompt)
+
         feedback_summary = response.text.strip()
+        
+        # If response from Gemini is empty or not meaningful, use a fallback
+        if not feedback_summary:
+            feedback_summary = "No meaningful summary generated. Feedback is too vague."
+        
         st.write("Generated Summary:")
         st.write(feedback_summary)
     except Exception as e:
         st.error(f"Error generating summary: {e}")
         feedback_summary = "Could not generate a summary."
 
-    # Create the JIRA ticket
-    feedback_data = {
-        'user_id': str(datetime.now().strftime('%Y-%m-%d')),  # Use current date as user ID
-        'feedback': feedback_summary
-    }
-    
-    create_jira_ticket(feedback_summary)
+    # Create the JIRA ticket if summary is valid
+    if feedback_summary != "Could not generate a summary.":
+        feedback_data = {
+            'user_id': str(datetime.now().strftime('%Y-%m-%d')),  # Use current date as user ID
+            'feedback': feedback_summary
+        }
+        
+        create_jira_ticket(feedback_summary)
