@@ -15,10 +15,10 @@ jira_project_key = st.secrets["jira"]["project_key"]
 # Function to create a JIRA ticket
 def create_jira_ticket(feedback_summary):
     url = f"{jira_url}/rest/api/2/issue/"
-    
+
     # Log project key and other params for debugging
     st.write(f"JIRA Project Key: {jira_project_key}")
-    
+
     # Prepare the data for the JIRA issue
     issue_data = {
         "fields": {
@@ -32,9 +32,10 @@ def create_jira_ticket(feedback_summary):
             }
         }
     }
-    
+
     # Log issue data for debugging
-    st.write(f"Issue Data: {issue_data}")
+    st.write("Issue Data Sent to JIRA API:")
+    st.write(issue_data)
 
     # Authenticate using Basic Auth
     auth = (jira_email, jira_api_token)
@@ -43,12 +44,15 @@ def create_jira_ticket(feedback_summary):
         # Send the request to create a new ticket
         response = requests.post(url, json=issue_data, auth=auth)
 
+        # Log the response status and content for debugging
+        st.write(f"JIRA API Response: {response.status_code}")
+        st.write(f"JIRA API Response Text: {response.text}")
+
         if response.status_code == 201:
             st.success("JIRA ticket created successfully!")
         else:
             st.error(f"Error creating JIRA ticket: {response.status_code} - {response.text}")
-            # Display the full response for debugging
-            st.write(response.text)
+
     except Exception as e:
         st.error(f"Error with JIRA API call: {e}")
 
@@ -125,4 +129,5 @@ if submit_button:
             'feedback': feedback_summary
         }
         
+        # Call the function to create the JIRA ticket
         create_jira_ticket(feedback_summary)
