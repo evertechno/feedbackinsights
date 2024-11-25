@@ -2,12 +2,16 @@ import streamlit as st
 import requests
 from datetime import datetime
 import pandas as pd
+import google.generativeai as genai
 
 # Access JIRA credentials from Streamlit Secrets
 jira_email = st.secrets["jira"]["email"]
 jira_api_token = st.secrets["jira"]["api_token"]
 jira_url = st.secrets["jira"]["url"]
 jira_project_key = st.secrets["jira"]["project_key"]
+
+# Configure Gemini AI API key from Streamlit secrets
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 # Function to create a JIRA ticket
 def create_jira_ticket(feedback_data):
@@ -45,6 +49,22 @@ def create_jira_ticket(feedback_data):
         st.error(f"Error creating JIRA ticket: {response.status_code} - {response.text}")
         # Display the full response for debugging
         st.write(response.text)
+
+# Function to analyze feedback using Gemini AI
+def analyze_feedback(feedback):
+    try:
+        # Load and configure the model
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Generate analysis or summary of the feedback
+        prompt = f"Analyze the following product feedback and summarize key insights:\n\n{feedback}"
+        response = model.generate_content(prompt)
+        
+        # Return the response text (analysis or summary)
+        return response.text
+    except Exception as e:
+        st.error(f"Error analyzing feedback: {e}")
+        return None
 
 # Streamlit App UI
 st.title("Advanced Product Feedback Collection System")
@@ -157,5 +177,12 @@ if submit_button:
         'feedback': feedback
     }
     
+    # Analyze the feedback using Gemini AI
+    feedback_analysis = analyze_feedback(feedback)
+    
+    if feedback_analysis:
+        st.write("Feedback Analysis Summary:")
+        st.write(feedback_analysis)
+
     # Create a JIRA ticket
     create_jira_ticket(feedback_data)
