@@ -11,7 +11,7 @@ jira_url = st.secrets["jira"]["url"]
 jira_project_key = st.secrets["jira"]["project_key"]
 
 # Configure Gemini AI API key from Streamlit secrets
-genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+google_api_key = st.secrets["google"]["GOOGLE_API_KEY"]
 
 # Function to create a JIRA ticket
 def create_jira_ticket(feedback_data):
